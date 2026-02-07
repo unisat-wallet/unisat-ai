@@ -1,0 +1,4 @@
+agentkit>=0.1.0
+veadk>=0.1.0
+google-adk>=0.1.0
+httpx>=0.27.0
