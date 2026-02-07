@@ -72,6 +72,7 @@ Agent: Current network recommended fees:
 bitcoin-query/
 ├── agent.py          # Agent definition and entry point
 ├── client.py         # Test client
+├── Dockerfile        # Container image for AgentKit Runtime
 ├── requirements.txt  # Python dependencies
 ├── pyproject.toml    # Project configuration
 └── README.md         # Project documentation
@@ -85,15 +86,31 @@ bitcoin-query/
 
 ## BytePlus AgentKit Runtime Deployment
 
-This project is designed for BytePlus AgentKit Runtime. To deploy:
+### Build and Push Docker Image
 
-1. Push your code to a Git repository
-2. In AgentKit Console, create a new Runtime
-3. Connect your repository and configure environment variables
-4. AgentKit will automatically build and deploy your agent
+```bash
+cd packages/agent-kit/beginner/bitcoin-query
 
-Required environment variables:
-- `UNISAT_MCP_URL`: UniSat MCP Server URL
+# Build image
+docker build -t unisat-bitcoin-query-agent .
+
+# Login to Volcengine registry
+docker login --username=<your-username> <registry-url>
+
+# Tag image
+docker tag unisat-bitcoin-query-agent <registry-url>/<namespace>/bitcoin-query-agent:v1.0.0
+
+# Push image
+docker push <registry-url>/<namespace>/bitcoin-query-agent:v1.0.0
+```
+
+### Deploy to AgentKit Runtime
+
+1. Go to AgentKit Console
+2. Create a new Runtime
+3. Use the pushed image URL
+4. Configure environment variables:
+   - `UNISAT_MCP_URL`: UniSat MCP Server URL
 
 ## License
 

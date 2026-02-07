@@ -90,6 +90,7 @@ Top 5 holders share: 18.5%
 brc20-analyst/
 ├── agent.py                      # Agent definition
 ├── client.py                     # Test client
+├── Dockerfile                    # Container image for AgentKit Runtime
 ├── prompts/
 │   └── analyst_prompt.py         # Analyst prompt
 ├── knowledgebase_docs/           # Knowledge base documents
@@ -109,16 +110,32 @@ brc20-analyst/
 
 ## BytePlus AgentKit Runtime Deployment
 
-This project is designed for BytePlus AgentKit Runtime. To deploy:
+### Build and Push Docker Image
 
-1. Push your code to a Git repository
-2. In AgentKit Console, create a new Runtime
-3. Connect your repository and configure environment variables
-4. AgentKit will automatically build and deploy your agent
+```bash
+cd packages/agent-kit/intermediate/brc20-analyst
 
-Required environment variables:
-- `UNISAT_MCP_URL`: UniSat MCP Server URL
-- `BRC20_KB_PATH`: Knowledge base path (optional, defaults to `./knowledgebase_docs`)
+# Build image
+docker build -t unisat-brc20-analyst-agent .
+
+# Login to Volcengine registry
+docker login --username=<your-username> <registry-url>
+
+# Tag image
+docker tag unisat-brc20-analyst-agent <registry-url>/<namespace>/brc20-analyst-agent:v1.0.0
+
+# Push image
+docker push <registry-url>/<namespace>/brc20-analyst-agent:v1.0.0
+```
+
+### Deploy to AgentKit Runtime
+
+1. Go to AgentKit Console
+2. Create a new Runtime
+3. Use the pushed image URL
+4. Configure environment variables:
+   - `UNISAT_MCP_URL`: UniSat MCP Server URL
+   - `BRC20_KB_PATH`: Knowledge base path (optional)
 
 ## License
 
