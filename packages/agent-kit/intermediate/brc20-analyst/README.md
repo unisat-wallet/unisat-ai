@@ -90,6 +90,7 @@ Top 5 holders share: 18.5%
 brc20-analyst/
 ├── agent.py                      # Agent definition
 ├── client.py                     # Test client
+├── Dockerfile                    # Container image for AgentKit Runtime
 ├── prompts/
 │   └── analyst_prompt.py         # Analyst prompt
 ├── knowledgebase_docs/           # Knowledge base documents
@@ -107,23 +108,31 @@ brc20-analyst/
 - **Complex Reasoning**: Multi-step analysis framework with structured output
 - **Risk Assessment**: Data-driven risk scoring system
 
-## BytePlus AgentKit Integration
+## Docker Build
 
-This project is fully compatible with BytePlus AgentKit platform and can be deployed directly.
+Build and run with Docker for AgentKit Runtime deployment:
 
-## Analysis Framework
+```bash
+# Build image
+docker build -t unisat-brc20-analyst-agent .
 
-### Token Overview Analysis
-1. Basic information (supply, holder count)
-2. Market data (price, volume)
-3. Holding analysis (concentration, whale distribution)
-4. Risk assessment (liquidity, decentralization, activity)
+# Run container
+docker run -p 8000:8000 \
+  -e UNISAT_MCP_URL=http://your-mcp-server:3000/mcp \
+  unisat-brc20-analyst-agent
+```
 
-### Token Comparison Analysis
-1. Basic information comparison table
-2. Market performance comparison
-3. Risk rating comparison
-4. Objective data explanation
+## BytePlus AgentKit Runtime Deployment
+
+1. Build the Docker image
+2. Push to your container registry
+3. Deploy to AgentKit Runtime with the image URL
+
+```bash
+# Tag and push to registry
+docker tag unisat-brc20-analyst-agent your-registry/unisat-brc20-analyst-agent:latest
+docker push your-registry/unisat-brc20-analyst-agent:latest
+```
 
 ## License
 

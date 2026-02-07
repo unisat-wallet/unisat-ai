@@ -72,6 +72,7 @@ Agent: Current network recommended fees:
 bitcoin-query/
 ├── agent.py          # Agent definition and entry point
 ├── client.py         # Test client
+├── Dockerfile        # Container image for AgentKit Runtime
 ├── requirements.txt  # Python dependencies
 ├── pyproject.toml    # Project configuration
 └── README.md         # Project documentation
@@ -83,9 +84,31 @@ bitcoin-query/
 - **MCP Tool Integration**: Connects to UniSat MCP Server via `MCPToolset`
 - **Short-term Memory**: Uses `ShortTermMemory` to maintain conversation context
 
-## BytePlus AgentKit Integration
+## Docker Build
 
-This project is fully compatible with BytePlus AgentKit platform and can be deployed directly.
+Build and run with Docker for AgentKit Runtime deployment:
+
+```bash
+# Build image
+docker build -t unisat-bitcoin-query-agent .
+
+# Run container
+docker run -p 8000:8000 \
+  -e UNISAT_MCP_URL=http://your-mcp-server:3000/mcp \
+  unisat-bitcoin-query-agent
+```
+
+## BytePlus AgentKit Runtime Deployment
+
+1. Build the Docker image
+2. Push to your container registry
+3. Deploy to AgentKit Runtime with the image URL
+
+```bash
+# Tag and push to registry
+docker tag unisat-bitcoin-query-agent your-registry/unisat-bitcoin-query-agent:latest
+docker push your-registry/unisat-bitcoin-query-agent:latest
+```
 
 ## License
 
