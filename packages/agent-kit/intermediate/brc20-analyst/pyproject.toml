@@ -1,17 +1,18 @@
 [project]
-name = "unisat-brc20-analyst"
+name = "unisat-brc20-analyst-agent"
 version = "0.1.0"
-description = "UniSat BRC20 Token Analyst - Professional BRC20 token analysis agent"
+description = "UniSat BRC20 Token Analyst - A professional BRC20 token analysis agent"
 authors = [
     {name = "UniSat", email = "dev@unisat.io"}
 ]
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "agentkit>=0.1.0",
-    "veadk>=0.1.0",
-    "google-adk>=0.1.0",
+    "veadk-python>=0.2.27",
+    "agentkit-sdk-python>=0.1.13",
+    "google-adk>=1.18.0",
     "httpx>=0.27.0",
+    "urllib3<2.0.0",
 ]
 
 [build-system]

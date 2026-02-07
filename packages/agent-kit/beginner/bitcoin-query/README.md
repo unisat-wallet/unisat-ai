@@ -72,7 +72,6 @@ Agent: Current network recommended fees:
 bitcoin-query/
 ├── agent.py          # Agent definition and entry point
 ├── client.py         # Test client
-├── Dockerfile        # Container image for AgentKit Runtime
 ├── requirements.txt  # Python dependencies
 ├── pyproject.toml    # Project configuration
 └── README.md         # Project documentation
@@ -84,35 +83,17 @@ bitcoin-query/
 - **MCP Tool Integration**: Connects to UniSat MCP Server via `MCPToolset`
 - **Short-term Memory**: Uses `ShortTermMemory` to maintain conversation context
 
-## Docker Build
-
-Build and run with Docker for AgentKit Runtime deployment:
-
-```bash
-# Build image (requires BytePlus private PyPI access)
-docker build -t unisat-bitcoin-query-agent \
-  --build-arg PIP_INDEX_URL=https://your-byteplus-pypi-url \
-  .
-
-# Run container
-docker run -p 8000:8000 \
-  -e UNISAT_MCP_URL=http://your-mcp-server:3000/mcp \
-  unisat-bitcoin-query-agent
-```
-
-> Note: `agentkit`, `veadk`, `google-adk` are BytePlus private packages. You need access to BytePlus private PyPI to build the image.
-
 ## BytePlus AgentKit Runtime Deployment
 
-1. Build the Docker image
-2. Push to your container registry
-3. Deploy to AgentKit Runtime with the image URL
+This project is designed for BytePlus AgentKit Runtime. To deploy:
 
-```bash
-# Tag and push to registry
-docker tag unisat-bitcoin-query-agent your-registry/unisat-bitcoin-query-agent:latest
-docker push your-registry/unisat-bitcoin-query-agent:latest
-```
+1. Push your code to a Git repository
+2. In AgentKit Console, create a new Runtime
+3. Connect your repository and configure environment variables
+4. AgentKit will automatically build and deploy your agent
+
+Required environment variables:
+- `UNISAT_MCP_URL`: UniSat MCP Server URL
 
 ## License
 

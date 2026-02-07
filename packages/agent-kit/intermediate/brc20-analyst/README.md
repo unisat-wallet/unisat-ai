@@ -90,7 +90,6 @@ Top 5 holders share: 18.5%
 brc20-analyst/
 ├── agent.py                      # Agent definition
 ├── client.py                     # Test client
-├── Dockerfile                    # Container image for AgentKit Runtime
 ├── prompts/
 │   └── analyst_prompt.py         # Analyst prompt
 ├── knowledgebase_docs/           # Knowledge base documents
@@ -108,35 +107,18 @@ brc20-analyst/
 - **Complex Reasoning**: Multi-step analysis framework with structured output
 - **Risk Assessment**: Data-driven risk scoring system
 
-## Docker Build
-
-Build and run with Docker for AgentKit Runtime deployment:
-
-```bash
-# Build image (requires BytePlus private PyPI access)
-docker build -t unisat-brc20-analyst-agent \
-  --build-arg PIP_INDEX_URL=https://your-byteplus-pypi-url \
-  .
-
-# Run container
-docker run -p 8000:8000 \
-  -e UNISAT_MCP_URL=http://your-mcp-server:3000/mcp \
-  unisat-brc20-analyst-agent
-```
-
-> Note: `agentkit`, `veadk`, `google-adk` are BytePlus private packages. You need access to BytePlus private PyPI to build the image.
-
 ## BytePlus AgentKit Runtime Deployment
 
-1. Build the Docker image
-2. Push to your container registry
-3. Deploy to AgentKit Runtime with the image URL
+This project is designed for BytePlus AgentKit Runtime. To deploy:
 
-```bash
-# Tag and push to registry
-docker tag unisat-brc20-analyst-agent your-registry/unisat-brc20-analyst-agent:latest
-docker push your-registry/unisat-brc20-analyst-agent:latest
-```
+1. Push your code to a Git repository
+2. In AgentKit Console, create a new Runtime
+3. Connect your repository and configure environment variables
+4. AgentKit will automatically build and deploy your agent
+
+Required environment variables:
+- `UNISAT_MCP_URL`: UniSat MCP Server URL
+- `BRC20_KB_PATH`: Knowledge base path (optional, defaults to `./knowledgebase_docs`)
 
 ## License
 
