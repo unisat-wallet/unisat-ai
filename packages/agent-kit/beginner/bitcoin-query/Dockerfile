@@ -3,6 +3,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install dependencies
+# Note: agentkit, veadk, google-adk are BytePlus private packages
+# Configure private PyPI index via build args or environment
+ARG PIP_INDEX_URL
+ARG PIP_EXTRA_INDEX_URL
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

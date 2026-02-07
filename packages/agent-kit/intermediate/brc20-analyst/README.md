@@ -113,14 +113,18 @@ brc20-analyst/
 Build and run with Docker for AgentKit Runtime deployment:
 
 ```bash
-# Build image
-docker build -t unisat-brc20-analyst-agent .
+# Build image (requires BytePlus private PyPI access)
+docker build -t unisat-brc20-analyst-agent \
+  --build-arg PIP_INDEX_URL=https://your-byteplus-pypi-url \
+  .
 
 # Run container
 docker run -p 8000:8000 \
   -e UNISAT_MCP_URL=http://your-mcp-server:3000/mcp \
   unisat-brc20-analyst-agent
 ```
+
+> Note: `agentkit`, `veadk`, `google-adk` are BytePlus private packages. You need access to BytePlus private PyPI to build the image.
 
 ## BytePlus AgentKit Runtime Deployment
 
