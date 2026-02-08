@@ -29,6 +29,7 @@ UNISAT_MCP_URL = os.getenv(
     "UNISAT_MCP_URL",
     "http://localhost:3000/mcp"
 )
+UNISAT_MCP_AUTH = os.getenv("UNISAT_MCP_AUTH", "")
 
 # Knowledge base configuration
 KNOWLEDGE_BASE_PATH = os.getenv(
@@ -38,11 +39,20 @@ KNOWLEDGE_BASE_PATH = os.getenv(
 
 # Initialize MCP Toolset for UniSat
 try:
-    unisat_mcp_tool = MCPToolset(
-        connection_params=StreamableHTTPConnectionParams(
+    connection_params = StreamableHTTPConnectionParams(
+        url=UNISAT_MCP_URL,
+        timeout=30,
+    )
+    # Add authorization header if provided
+    if UNISAT_MCP_AUTH:
+        connection_params = StreamableHTTPConnectionParams(
             url=UNISAT_MCP_URL,
             timeout=30,
-        ),
+            headers={"Authorization": f"Bearer {UNISAT_MCP_AUTH}"}
+        )
+
+    unisat_mcp_tool = MCPToolset(
+        connection_params=connection_params,
     )
     tools = [unisat_mcp_tool]
     has_mcp = True
