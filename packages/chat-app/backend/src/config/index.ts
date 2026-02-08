@@ -11,7 +11,7 @@ export interface Config {
   unisatApiKey: string;
 
   // AI Provider
-  aiProvider: "anthropic" | "openai";
+  aiProvider: "anthropic" | "openai" | "agentkit";
 
   // Anthropic
   anthropicApiKey?: string;
@@ -24,6 +24,10 @@ export interface Config {
   openaiBaseURL?: string;
   openaiModel?: string;
   openaiMaxTokens?: number;
+
+  // AgentKit
+  agentKitBaseURL?: string;
+  agentKitApiKey?: string;
 
   // UniSat API
   unisatBaseURL: string;
@@ -59,7 +63,7 @@ export const config: Config = {
   unisatApiKey: getEnvVar("UNISAT_API_KEY"),
 
   // AI Provider (default: anthropic)
-  aiProvider: (process.env.AI_PROVIDER as "anthropic" | "openai") || "anthropic",
+  aiProvider: (process.env.AI_PROVIDER as "anthropic" | "openai" | "agentkit") || "anthropic",
 
   // Anthropic
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -72,6 +76,10 @@ export const config: Config = {
   openaiBaseURL: process.env.OPENAI_BASE_URL,
   openaiModel: getEnvVar("OPENAI_MODEL", "qwen-coder-plus"),
   openaiMaxTokens: parseInt(getEnvVar("OPENAI_MAX_TOKENS", "4096"), 10),
+
+  // AgentKit
+  agentKitBaseURL: process.env.AGENTKIT_BASE_URL,
+  agentKitApiKey: process.env.AGENTKIT_API_KEY,
 
   // UniSat API
   unisatBaseURL: getEnvVar("UNISAT_BASE_URL", "https://open-api.unisat.io"),
@@ -105,6 +113,13 @@ function validateConfig(): void {
   } else if (config.aiProvider === "openai") {
     if (!config.openaiApiKey || config.openaiApiKey.trim() === "") {
       throw new Error("Missing required configuration for OpenAI: openaiApiKey (OPENAI_API_KEY)");
+    }
+  } else if (config.aiProvider === "agentkit") {
+    if (!config.agentKitBaseURL || config.agentKitBaseURL.trim() === "") {
+      throw new Error("Missing required configuration for AgentKit: agentKitBaseURL (AGENTKIT_BASE_URL)");
+    }
+    if (!config.agentKitApiKey || config.agentKitApiKey.trim() === "") {
+      throw new Error("Missing required configuration for AgentKit: agentKitApiKey (AGENTKIT_API_KEY)");
     }
   }
 }

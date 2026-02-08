@@ -5,6 +5,7 @@
 
 import { AnthropicClient } from "./anthropic-client.js";
 import { OpenAIClient } from "./openai-client.js";
+import { AgentKitClient } from "./agentkit-client.js";
 import { ToolAdapter } from "../mcp/tool-adapter.js";
 import { ContextBuilder } from "./context-builder.js";
 import { ResponseFormatter } from "./response-formatter.js";
@@ -62,19 +63,28 @@ interface AIClient {
 
 export class ChatService {
   private readonly aiClient: AIClient;
+  private readonly agentKitClient: AgentKitClient | null = null;
   private readonly toolAdapter: ToolAdapter;
   private readonly contextBuilder: ContextBuilder;
   private readonly formatter: ResponseFormatter;
   private readonly sessions = new Map<string, ChatMessage[]>();
+  private readonly isAgentKitMode: boolean;
 
   constructor() {
     // Initialize the appropriate AI client based on config
-    if (config.aiProvider === "openai") {
+    if (config.aiProvider === "agentkit") {
+      console.log("Using AgentKit provider");
+      this.agentKitClient = new AgentKitClient();
+      this.aiClient = null as unknown as AIClient; // Not used in AgentKit mode
+      this.isAgentKitMode = true;
+    } else if (config.aiProvider === "openai") {
       console.log("Using OpenAI provider");
       this.aiClient = new OpenAIClient() as AIClient;
+      this.isAgentKitMode = false;
     } else {
       console.log("Using Anthropic provider");
       this.aiClient = new AnthropicClient() as AIClient;
+      this.isAgentKitMode = false;
     }
 
     this.toolAdapter = new ToolAdapter(config.unisatApiKey);
@@ -201,6 +211,92 @@ export class ChatService {
       console.log(
         `[ChatService] Starting streamChat with ${config.aiProvider} provider...`,
       );
+
+      // AgentKit mode - delegate to AgentKit Runtime
+      if (this.isAgentKitMode && this.agentKitClient) {
+        console.log(`[ChatService] Using AgentKit mode`);
+
+        const agentKitMessages = context.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }));
+
+        for await (const chunk of this.agentKitClient.streamChat(
+          agentKitMessages,
+          options.sessionId,
+        )) {
+          chunkCount++;
+          console.log(`[ChatService] AgentKit chunk ${chunkCount}:`, chunk.type);
+
+          if (chunk.type === "text") {
+            assistantContent += chunk.content;
+            yield {
+              type: "text",
+              content: chunk.content,
+            };
+          } else if (chunk.type === "tool_use") {
+            const toolCall: ToolCall = {
+              id: chunk.toolUse!.id,
+              name: chunk.toolUse!.name,
+              arguments: chunk.toolUse!.input,
+              status: "completed", // AgentKit handles tool execution internally
+            };
+            toolCalls.push(toolCall);
+
+            yield {
+              type: "step",
+              step: this.createStep(
+                "tool_calling",
+                `Agent calling: ${toolCall.name}`,
+                undefined,
+                { toolName: toolCall.name, args: toolCall.arguments },
+                toolCall,
+              ),
+            };
+
+            yield {
+              type: "tool_call",
+              toolCall,
+            };
+          } else if (chunk.type === "done") {
+            break;
+          }
+        }
+
+        // Create final message
+        const assistantMsg: ChatMessage = {
+          id: `assistant_${Date.now()}`,
+          role: "assistant",
+          content: assistantContent,
+          timestamp: Date.now(),
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          metadata: {
+            model: "agentkit",
+            latency: Date.now() - startTime,
+          },
+        };
+        this.addToSession(options.sessionId, assistantMsg);
+
+        yield {
+          type: "step",
+          step: this.createStep(
+            "response_complete",
+            "Response complete",
+            undefined,
+            { latency: Date.now() - startTime },
+          ),
+        };
+
+        yield {
+          type: "done",
+          message: assistantMsg,
+        };
+
+        console.log(`[ChatService] AgentKit mode completed`);
+        return;
+      }
+
+      // Standard mode - Anthropic/OpenAI
       console.log(
         `[ChatService] Model: ${config.aiProvider === "openai" ? config.openaiModel : config.anthropicModel}`,
       );
