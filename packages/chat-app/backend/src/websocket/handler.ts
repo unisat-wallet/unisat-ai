@@ -119,7 +119,7 @@ export class WebSocketHandler {
       case "chat":
         await this.handleChatMessage(
           socket,
-          eventData as { sessionId: string; message: string },
+          eventData as { sessionId: string; message: string; provider?: string },
         );
         break;
 
@@ -151,12 +151,13 @@ export class WebSocketHandler {
    */
   private async handleChatMessage(
     socket: WebSocket,
-    data: { sessionId: string; message: string },
+    data: { sessionId: string; message: string; provider?: string },
   ): Promise<void> {
-    const { sessionId, message } = data;
+    const { sessionId, message, provider } = data;
     console.log(`[WS] === handleChatMessage START ===`);
     console.log(`[WS] sessionId: ${sessionId}`);
     console.log(`[WS] message: "${message}"`);
+    console.log(`[WS] provider: ${provider || "default"}`);
     console.log(`[WS] Socket readyState: ${socket.readyState}`);
 
     try {
@@ -166,6 +167,7 @@ export class WebSocketHandler {
       // Stream response
       for await (const chunk of this.chatService.processMessage(message, {
         sessionId,
+        provider: provider as "anthropic" | "openai" | "agentkit" | undefined,
       })) {
         chunkCount++;
         console.log(`[WS] === Chunk ${chunkCount} ===`);

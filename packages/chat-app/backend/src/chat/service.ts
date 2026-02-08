@@ -15,6 +15,7 @@ import type { ChatMessage, ToolCall, ToolResult } from "../types/index.js";
 export interface ChatServiceOptions {
   sessionId: string;
   history?: ChatMessage[];
+  provider?: "anthropic" | "openai" | "agentkit";
 }
 
 export type InteractionStepType =
@@ -62,34 +63,94 @@ interface AIClient {
 }
 
 export class ChatService {
-  private readonly aiClient: AIClient;
+  private readonly anthropicClient: AnthropicClient | null = null;
+  private readonly openaiClient: OpenAIClient | null = null;
   private readonly agentKitClient: AgentKitClient | null = null;
   private readonly toolAdapter: ToolAdapter;
   private readonly contextBuilder: ContextBuilder;
   private readonly formatter: ResponseFormatter;
   private readonly sessions = new Map<string, ChatMessage[]>();
-  private readonly isAgentKitMode: boolean;
+  private readonly defaultProvider: "anthropic" | "openai" | "agentkit";
 
   constructor() {
-    // Initialize the appropriate AI client based on config
-    if (config.aiProvider === "agentkit") {
-      console.log("Using AgentKit provider");
-      this.agentKitClient = new AgentKitClient();
-      this.aiClient = null as unknown as AIClient; // Not used in AgentKit mode
-      this.isAgentKitMode = true;
-    } else if (config.aiProvider === "openai") {
-      console.log("Using OpenAI provider");
-      this.aiClient = new OpenAIClient() as AIClient;
-      this.isAgentKitMode = false;
-    } else {
-      console.log("Using Anthropic provider");
-      this.aiClient = new AnthropicClient() as AIClient;
-      this.isAgentKitMode = false;
+    // Initialize all available clients
+    try {
+      if (config.anthropicApiKey) {
+        this.anthropicClient = new AnthropicClient();
+        console.log("Anthropic client initialized");
+      }
+    } catch (e) {
+      console.log("Anthropic client not available");
     }
 
+    try {
+      if (config.openaiApiKey) {
+        this.openaiClient = new OpenAIClient();
+        console.log("OpenAI client initialized");
+      }
+    } catch (e) {
+      console.log("OpenAI client not available");
+    }
+
+    try {
+      if (config.agentKitBaseURL && config.agentKitApiKey) {
+        this.agentKitClient = new AgentKitClient();
+        console.log("AgentKit client initialized");
+      }
+    } catch (e) {
+      console.log("AgentKit client not available");
+    }
+
+    this.defaultProvider = config.aiProvider;
     this.toolAdapter = new ToolAdapter(config.unisatApiKey);
     this.contextBuilder = new ContextBuilder();
     this.formatter = new ResponseFormatter();
+
+    console.log(`Default AI provider: ${this.defaultProvider}`);
+    console.log(`Available providers: ${this.getAvailableProviders().join(", ")}`);
+  }
+
+  /**
+   * Get list of available providers
+   */
+  getAvailableProviders(): string[] {
+    const providers: string[] = [];
+    if (this.anthropicClient) providers.push("anthropic");
+    if (this.openaiClient) providers.push("openai");
+    if (this.agentKitClient) providers.push("agentkit");
+    return providers;
+  }
+
+  /**
+   * Get AI client for the specified provider
+   */
+  private getAIClient(provider?: string): { client: AIClient | null; isAgentKit: boolean } {
+    const selectedProvider = provider || this.defaultProvider;
+
+    if (selectedProvider === "agentkit" && this.agentKitClient) {
+      return { client: null, isAgentKit: true };
+    }
+
+    if (selectedProvider === "openai" && this.openaiClient) {
+      return { client: this.openaiClient as unknown as AIClient, isAgentKit: false };
+    }
+
+    if (selectedProvider === "anthropic" && this.anthropicClient) {
+      return { client: this.anthropicClient as unknown as AIClient, isAgentKit: false };
+    }
+
+    // Fallback to any available client
+    if (this.anthropicClient) {
+      return { client: this.anthropicClient as unknown as AIClient, isAgentKit: false };
+    }
+    if (this.openaiClient) {
+      return { client: this.openaiClient as unknown as AIClient, isAgentKit: false };
+    }
+    if (this.agentKitClient) {
+      return { client: null, isAgentKit: true };
+    }
+
+    throw new Error("No AI provider available");
   }
 
   /**
@@ -208,12 +269,15 @@ export class ChatService {
     let chunkCount = 0;
 
     try {
+      const selectedProvider = options.provider || this.defaultProvider;
+      const { client: aiClient, isAgentKit } = this.getAIClient(selectedProvider);
+
       console.log(
-        `[ChatService] Starting streamChat with ${config.aiProvider} provider...`,
+        `[ChatService] Starting streamChat with ${selectedProvider} provider...`,
       );
 
       // AgentKit mode - delegate to AgentKit Runtime
-      if (this.isAgentKitMode && this.agentKitClient) {
+      if (isAgentKit && this.agentKitClient) {
         console.log(`[ChatService] Using AgentKit mode`);
 
         const agentKitMessages = context.map((m) => ({
@@ -297,11 +361,15 @@ export class ChatService {
       }
 
       // Standard mode - Anthropic/OpenAI
+      if (!aiClient) {
+        throw new Error("No AI client available for standard mode");
+      }
+
       console.log(
-        `[ChatService] Model: ${config.aiProvider === "openai" ? config.openaiModel : config.anthropicModel}`,
+        `[ChatService] Model: ${selectedProvider === "openai" ? config.openaiModel : config.anthropicModel}`,
       );
 
-      for await (const chunk of this.aiClient.streamChat(context)) {
+      for await (const chunk of aiClient.streamChat(context)) {
         chunkCount++;
         console.log(`[ChatService] === Chunk ${chunkCount} ===`);
         console.log(`[ChatService] Chunk type:`, chunk.type);

@@ -13,6 +13,7 @@ import { ChatInput } from "./ChatInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { SuggestedQueries } from "./SuggestedQueries";
 import { ToolPanel } from "./ToolPanel";
+import { ProviderSelector, type AIProvider } from "./ProviderSelector";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { ChatStreamEvent } from "@/types";
@@ -26,6 +27,7 @@ interface ChatContainerProps {
 export function ChatContainer({ wsUrl, sessionId }: ChatContainerProps) {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [showToolPanel, setShowToolPanel] = React.useState(true);
+  const [aiProvider, setAiProvider] = React.useState<AIProvider>("agentkit");
   const { send, isConnected, onMessage } = useWebSocket(wsUrl);
   const {
     messages,
@@ -71,6 +73,7 @@ export function ChatContainer({ wsUrl, sessionId }: ChatContainerProps) {
       send("chat", {
         sessionId,
         message: content,
+        provider: aiProvider,
       });
     }
     sendMessage(content);
@@ -84,19 +87,26 @@ export function ChatContainer({ wsUrl, sessionId }: ChatContainerProps) {
       <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${showToolPanel ? 'pr-0' : ''}`}>
         {/* Header with Tool Panel Toggle */}
         <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">UniSat AI</h1>
-            {isConnected ? (
-              <span className="flex items-center gap-1 text-xs text-green-600">
-                <span className="w-2 h-2 bg-green-500 rounded-full" />
-                Connected
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-xs text-yellow-600">
-                <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                Connecting...
-              </span>
-            )}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold">UniSat AI</h1>
+              {isConnected ? (
+                <span className="flex items-center gap-1 text-xs text-green-600">
+                  <span className="w-2 h-2 bg-green-500 rounded-full" />
+                  Connected
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs text-yellow-600">
+                  <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                  Connecting...
+                </span>
+              )}
+            </div>
+            <ProviderSelector
+              value={aiProvider}
+              onChange={setAiProvider}
+              disabled={isLoading || isStreaming}
+            />
           </div>
           <Button
             variant="ghost"
