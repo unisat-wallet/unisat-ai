@@ -10,7 +10,8 @@ UniSat AI provides a complete set of tools and examples to help AI developers qu
 unisat-ai/
 ├── packages/
 │   ├── chat-app/          # Chat application (Next.js + WebSocket)
-│   ├── mcp-server/        # Unified MCP server
+│   ├── mcp-server/        # Unified MCP server (Streamable HTTP)
+│   ├── doc-search/        # Documentation vector search (LanceDB)
 │   ├── agent-kit/         # Agent development toolkit
 │   └── skills/            # Claude Code skill integration
 └── docs/                  # Documentation and tutorials
@@ -50,6 +51,19 @@ Configure in Claude Desktop or other MCP clients:
 }
 ```
 
+### Doc Search
+
+```bash
+cd packages/doc-search
+pnpm install
+
+# Index documentation (TF-IDF, offline)
+EMBEDDING_PROVIDER=tfidf pnpm index
+
+# Search
+EMBEDDING_PROVIDER=tfidf pnpm search "how to connect wallet"
+```
+
 ### Agent Examples
 
 ```bash
@@ -71,11 +85,14 @@ python agent.py
 - Project structure setup
 - Chat App basic framework
 - WebSocket real-time communication
-- Unified MCP server
+- Unified MCP server (Streamable HTTP transport)
 - `@unisat/open-api` official SDK integration
-- AI tool calling support (Anthropic/OpenAI/GLM)
+- AI tool calling support (OpenAI/AgentKit)
 - Real-time block height display
 - Fee monitoring display
+- Documentation vector search (LanceDB + TF-IDF/OpenAI embeddings)
+- i18n multi-language support
+- Docker Compose & CI/CD pipeline
 
 ### In Progress
 - Chat App enhancements
