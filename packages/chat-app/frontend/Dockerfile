@@ -43,7 +43,8 @@ COPY --from=base /app/packages/chat-app/frontend/.next ./packages/chat-app/front
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/packages/chat-app/frontend/node_modules ./packages/chat-app/frontend/node_modules
 
-# Copy public folder if it exists (optional)
+# Copy public folder and config
+COPY --from=base /app/packages/chat-app/frontend/public ./packages/chat-app/frontend/public
 COPY --from=base /app/packages/chat-app/frontend/next.config.js ./packages/chat-app/frontend/
 
 # Expose port

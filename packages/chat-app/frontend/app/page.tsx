@@ -15,7 +15,7 @@ export default function HomePage() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="UniSat" width={32} height={32} />
+            <Image src="/logo.png" alt="UniSat" width={32} height={32} unoptimized />
             <span className="text-xl font-bold">UniSat AI</span>
           </div>
           <nav className="flex items-center gap-6">
