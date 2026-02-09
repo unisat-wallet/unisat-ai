@@ -14,10 +14,7 @@ export function useWebSocket(url?: string) {
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     status: "connecting",
   });
-  const messageHandlersRef = useRef<Map<string, Set<(message: WSMessage) => void>>>(
-    new Map()
-  );
-  const clientUnsubscribesRef = useRef<Map<string, () => void>>(new Map());
+  const handlersRef = useRef<Map<string, (message: WSMessage) => void>>(new Map());
 
   // Initialize client
   useEffect(() => {
@@ -31,92 +28,46 @@ export function useWebSocket(url?: string) {
       setConnectionState(state);
     });
 
+    // Set up single message handler that routes to type-specific handlers
+    wsClient.setMessageHandler((message) => {
+      const handler = handlersRef.current.get(message.type);
+      console.log("[useWebSocket] Message received:", message.type, "handler exists:", !!handler, "handlers count:", handlersRef.current.size);
+      if (handler) {
+        handler(message);
+      }
+    });
+
     // Connect
     wsClient.connect();
 
     return () => {
       unsubscribe();
+      // Don't clear message handler on cleanup - it's a singleton
     };
   }, [url]);
-
-  // Re-subscribe all handlers when client changes
-  useEffect(() => {
-    if (!client) return;
-
-    console.log("[useWebSocket] Client changed, re-subscribing all handlers");
-    console.log("[useWebSocket] Handler types:", Array.from(messageHandlersRef.current.keys()));
-
-    // Clear previous subscriptions
-    for (const unsubscribe of clientUnsubscribesRef.current.values()) {
-      unsubscribe();
-    }
-    clientUnsubscribesRef.current.clear();
-
-    // Re-subscribe all handlers
-    for (const [type, handlers] of messageHandlersRef.current) {
-      console.log(`[useWebSocket] Re-subscribing ${handlers.size} handlers for type: ${type}`);
-      for (const handler of handlers) {
-        const unsubscribe = client.onMessage((message) => {
-          if (message.type === type) {
-            handler(message);
-          }
-        });
-        clientUnsubscribesRef.current.set(`${type}_${handler.name}`, unsubscribe);
-      }
-    }
-  }, [client]);
 
   // Register message handler
   const onMessage = useCallback(
     (type: string, handler: (message: WSMessage) => void) => {
-      console.log(`[useWebSocket] Registering handler for type: ${type}`);
-      console.log(`[useWebSocket] Client exists: ${!!client}`);
-
-      const handlers = messageHandlersRef.current.get(type) ?? new Set();
-      handlers.add(handler);
-      messageHandlersRef.current.set(type, handlers);
-
-      // Also subscribe to client messages if client exists
-      if (client) {
-        const unsubscribe = client.onMessage((message) => {
-          if (message.type === type) {
-            handler(message);
-          }
-        });
-        clientUnsubscribesRef.current.set(`${type}_${handler.name}`, unsubscribe);
-
-        return () => {
-          console.log(`[useWebSocket] Unregistering handler for type: ${type}`);
-          handlers.delete(handler);
-          const storedUnsub = clientUnsubscribesRef.current.get(`${type}_${handler.name}`);
-          if (storedUnsub) {
-            storedUnsub();
-            clientUnsubscribesRef.current.delete(`${type}_${handler.name}`);
-          }
-        };
-      }
+      // Store handler in ref (overwrites previous handler for same type)
+      console.log("[useWebSocket] onMessage registering handler for type:", type);
+      handlersRef.current.set(type, handler);
 
       return () => {
-        console.log(`[useWebSocket] Unregistering handler for type: ${type} (no client yet)`);
-        handlers.delete(handler);
+        // Only delete if it's the same handler
+        console.log("[useWebSocket] onMessage unregistering handler for type:", type);
+        if (handlersRef.current.get(type) === handler) {
+          handlersRef.current.delete(type);
+        }
       };
     },
-    [client]
+    []
   );
 
   // Send message
   const send = useCallback(
     (type: string, data: unknown) => {
-      console.log("[useWebSocket] === send ===");
-      console.log("[useWebSocket] Type:", type);
-      console.log("[useWebSocket] Data:", data);
-      console.log("[useWebSocket] Client:", client ? "exists" : "null");
-
-      const result = client?.send(type as any, data) ?? false;
-      console.log("[useWebSocket] Send result:", result);
-      console.log("[useWebSocket] === send END ===");
-
-      return result;
+      return client?.send(type as any, data) ?? false;
     },
     [client]
   );

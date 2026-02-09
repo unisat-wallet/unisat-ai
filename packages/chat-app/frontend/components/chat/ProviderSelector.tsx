@@ -1,15 +1,16 @@
 /**
  * ProviderSelector Component
- * Allows switching between AI providers
+ * Allows switching between AI providers with distinct visual styles
  */
 
 "use client";
 
 import * as React from "react";
 import { Button } from "@/components/ui/Button";
-import { Bot, Cpu, Sparkles } from "lucide-react";
+import { Bot, Cpu } from "lucide-react";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 
-export type AIProvider = "anthropic" | "openai" | "agentkit";
+export type AIProvider = "openai" | "agentkit";
 
 interface ProviderSelectorProps {
   value: AIProvider;
@@ -17,28 +18,32 @@ interface ProviderSelectorProps {
   disabled?: boolean;
 }
 
-const providers: { id: AIProvider; name: string; icon: React.ReactNode; description: string }[] = [
-  {
-    id: "anthropic",
-    name: "Claude",
-    icon: <Sparkles className="w-4 h-4" />,
-    description: "Anthropic Claude",
-  },
+const providers: {
+  id: AIProvider;
+  name: string;
+  icon: React.ReactNode;
+  descKey: TranslationKey;
+  activeClass: string;
+}[] = [
   {
     id: "openai",
     name: "OpenAI",
     icon: <Bot className="w-4 h-4" />,
-    description: "OpenAI GPT",
+    descKey: "openaiDesc",
+    activeClass: "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm",
   },
   {
     id: "agentkit",
     name: "AgentKit",
     icon: <Cpu className="w-4 h-4" />,
-    description: "UniSat Agent",
+    descKey: "agentkitDesc",
+    activeClass: "bg-bitcoin-orange hover:bg-orange-600 text-white shadow-sm",
   },
 ];
 
 export function ProviderSelector({ value, onChange, disabled }: ProviderSelectorProps) {
+  const { t } = useI18n();
+
   return (
     <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
       {providers.map((provider) => (
@@ -50,10 +55,10 @@ export function ProviderSelector({ value, onChange, disabled }: ProviderSelector
           disabled={disabled}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all ${
             value === provider.id
-              ? "bg-bitcoin-orange text-white shadow-sm"
+              ? provider.activeClass
               : "hover:bg-muted-foreground/10"
           }`}
-          title={provider.description}
+          title={t(provider.descKey)}
         >
           {provider.icon}
           <span className="hidden sm:inline">{provider.name}</span>

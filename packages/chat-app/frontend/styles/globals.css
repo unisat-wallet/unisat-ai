@@ -87,10 +87,13 @@
 /* Markdown content styling */
 .markdown-content {
   @apply prose prose-sm dark:prose-invert max-w-none;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .markdown-content p {
   @apply mb-4;
+  word-break: break-word;
 }
 
 .markdown-content h1,
@@ -98,6 +101,7 @@
 .markdown-content h3,
 .markdown-content h4 {
   @apply font-semibold mt-6 mb-3;
+  word-break: break-word;
 }
 
 .markdown-content h1 {
@@ -126,19 +130,41 @@
 }
 
 .markdown-content code {
-  @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+  @apply px-1.5 py-0.5 rounded text-sm font-mono;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  word-break: break-all;
 }
 
 .markdown-content pre {
-  @apply bg-muted p-3 rounded-md overflow-x-auto mb-4;
+  @apply p-4 rounded-lg overflow-x-auto mb-4;
+  background-color: hsl(220 13% 18%);
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .markdown-content pre code {
   @apply bg-transparent p-0;
+  color: hsl(210 14% 83%);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Light mode code blocks */
+:root .markdown-content pre {
+  background-color: hsl(220 13% 95%);
+}
+
+:root .markdown-content pre code {
+  color: hsl(220 13% 18%);
 }
 
 .markdown-content table {
   @apply w-full text-sm mb-4;
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .markdown-content th,

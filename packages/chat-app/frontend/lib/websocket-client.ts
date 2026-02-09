@@ -9,7 +9,6 @@ import type {
   ConnectionState,
 } from "@/types";
 import { RECONNECT_DELAYS } from "./constants";
-import { sleep } from "./utils";
 
 export type WSMessageHandler = (message: WSMessage) => void;
 export type WSConnectionHandler = (state: ConnectionState) => void;
@@ -17,7 +16,7 @@ export type WSConnectionHandler = (state: ConnectionState) => void;
 export class WebSocketClient {
   private ws: WebSocket | null = null;
   private url: string;
-  private messageHandlers: Set<WSMessageHandler> = new Set();
+  private messageHandler: WSMessageHandler | null = null;
   private connectionHandlers: Set<WSConnectionHandler> = new Set();
   private reconnectAttempts = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
@@ -51,21 +50,16 @@ export class WebSocketClient {
       };
 
       this.ws.onmessage = (event) => {
-        console.log(`[WebSocketClient] === onmessage ===`);
-        console.log(`[WebSocketClient] Event data length: ${event.data.length}`);
-        console.log(`[WebSocketClient] Event data:`, event.data);
         try {
           const message = JSON.parse(event.data) as WSMessage;
-          console.log(`[WebSocketClient] Parsed message type:`, message.type);
-          console.log(`[WebSocketClient] Parsed message data:`, message.data);
-          console.log(`[WebSocketClient] Notifying ${this.messageHandlers.size} message handlers`);
-          this.notifyMessageHandlers(message);
-          console.log(`[WebSocketClient] Message handlers notified`);
+          console.log("[WS-Client] Received message:", message.type, "handler exists:", !!this.messageHandler);
+          // Only call the single message handler
+          if (this.messageHandler) {
+            this.messageHandler(message);
+          }
         } catch (error) {
           console.error("[WebSocketClient] Failed to parse WebSocket message:", error);
-          console.error("[WebSocketClient] Event data was:", event.data);
         }
-        console.log(`[WebSocketClient] === onmessage END ===`);
       };
 
       this.ws.onclose = (event) => {
@@ -112,15 +106,8 @@ export class WebSocketClient {
    * Send message to server
    */
   send(type: WSMessageType, data: unknown): boolean {
-    console.log(`[WebSocketClient] === send ===`);
-    console.log(`[WebSocketClient] Type:`, type);
-    console.log(`[WebSocketClient] Data:`, data);
-    console.log(`[WebSocketClient] WebSocket:`, this.ws ? "exists" : "null");
-    console.log(`[WebSocketClient] ReadyState:`, this.ws?.readyState, "(OPEN=" + WebSocket.OPEN + ")");
-
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.warn("[WebSocketClient] WebSocket not connected, cannot send message");
-      console.warn(`[WebSocketClient] ws: ${!!this.ws}, readyState: ${this.ws?.readyState}`);
       return false;
     }
 
@@ -130,10 +117,7 @@ export class WebSocketClient {
         data,
         timestamp: Date.now(),
       };
-      const messageStr = JSON.stringify(message);
-      console.log(`[WebSocketClient] Sending message (length: ${messageStr.length}):`, messageStr);
-      this.ws.send(messageStr);
-      console.log(`[WebSocketClient] Message sent successfully`);
+      this.ws.send(JSON.stringify(message));
       return true;
     } catch (error) {
       console.error("[WebSocketClient] Failed to send WebSocket message:", error);
@@ -142,11 +126,11 @@ export class WebSocketClient {
   }
 
   /**
-   * Subscribe to messages
+   * Set the single message handler (replaces previous handler)
    */
-  onMessage(handler: WSMessageHandler): () => void {
-    this.messageHandlers.add(handler);
-    return () => this.messageHandlers.delete(handler);
+  setMessageHandler(handler: WSMessageHandler | null): void {
+    console.log("[WS-Client] setMessageHandler called, previous handler:", !!this.messageHandler, "new handler:", !!handler);
+    this.messageHandler = handler;
   }
 
   /**
@@ -219,19 +203,6 @@ export class WebSocketClient {
   private updateState(newState: Partial<ConnectionState>): void {
     this.state = { ...this.state, ...newState };
     this.notifyConnectionHandlers(this.state);
-  }
-
-  /**
-   * Notify all message handlers
-   */
-  private notifyMessageHandlers(message: WSMessage): void {
-    for (const handler of this.messageHandlers) {
-      try {
-        handler(message);
-      } catch (error) {
-        console.error("Error in message handler:", error);
-      }
-    }
   }
 
   /**

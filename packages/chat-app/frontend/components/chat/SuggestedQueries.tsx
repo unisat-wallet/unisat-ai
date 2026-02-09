@@ -5,28 +5,16 @@
 
 "use client";
 
-import { SUGGESTED_QUERIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import {
+  Blocks,
+  Coins,
+  Receipt,
   TrendingUp,
-  BarChart3,
   Wallet,
-  Activity,
-  Users,
-  Zap,
-  HelpCircle,
+  FileSearch,
 } from "lucide-react";
-
-// Icon mapping
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  TrendingUp,
-  BarChart: BarChart3,
-  Wallet,
-  Activity,
-  Users,
-  Zap,
-  HelpCircle,
-};
 
 interface SuggestedQueriesProps {
   onSelect: (query: string) => void;
@@ -34,34 +22,41 @@ interface SuggestedQueriesProps {
 }
 
 export function SuggestedQueries({ onSelect, className }: SuggestedQueriesProps) {
-  return (
-    <div
-      className={cn(
-        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3",
-        className
-      )}
-    >
-      {SUGGESTED_QUERIES.map((suggestion) => {
-        const Icon = ICON_MAP[suggestion.icon] || HelpCircle;
+  const { t } = useI18n();
 
-        return (
-          <button
-            key={suggestion.label}
-            onClick={() => onSelect(suggestion.query)}
-            className="flex flex-col gap-2 p-4 rounded-xl border bg-card hover:bg-accent hover:border-bitcoin-orange/50 transition-all text-left group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-bitcoin-orange/10 flex items-center justify-center group-hover:bg-bitcoin-orange/20 transition-colors">
-                <Icon className="w-5 h-5 text-bitcoin-orange" />
+  const suggestions = [
+    { key: "query1" as const, icon: Blocks },
+    { key: "query2" as const, icon: Coins },
+    { key: "query3" as const, icon: Receipt },
+    { key: "query4" as const, icon: TrendingUp },
+    { key: "query5" as const, icon: Wallet },
+    { key: "query6" as const, icon: FileSearch },
+  ];
+
+  return (
+    <div className={cn("space-y-4", className)}>
+      <h3 className="text-sm font-medium text-muted-foreground text-center">
+        {t("suggestedTitle")}
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {suggestions.map((suggestion) => {
+          const Icon = suggestion.icon;
+          const query = t(suggestion.key);
+
+          return (
+            <button
+              key={suggestion.key}
+              onClick={() => onSelect(query)}
+              className="flex items-center gap-3 p-3 rounded-xl border bg-card hover:bg-accent hover:border-bitcoin-orange/50 transition-all text-left group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-bitcoin-orange/10 flex items-center justify-center group-hover:bg-bitcoin-orange/20 transition-colors flex-shrink-0">
+                <Icon className="w-4 h-4 text-bitcoin-orange" />
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="font-medium text-sm block">{suggestion.label}</span>
-                <span className="text-xs text-muted-foreground">{suggestion.description}</span>
-              </div>
-            </div>
-          </button>
-        );
-      })}
+              <span className="text-sm">{query}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

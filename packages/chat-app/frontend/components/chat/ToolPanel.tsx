@@ -9,6 +9,7 @@ import * as React from "react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import type { ToolCall, InteractionStep, InteractionStepType } from "@/types";
+import { useI18n } from "@/lib/i18n";
 import {
   ChevronDown,
   ChevronRight,
@@ -266,67 +267,85 @@ function ToolCallItem({ tool, index, isLatest }: ToolCallItemProps) {
   );
 }
 
-// Step icon and color mappings
-const STEP_CONFIG: Record<InteractionStepType, { icon: React.ReactNode; color: string; label: string }> = {
-  user_message: {
-    icon: <MessageSquare className="w-4 h-4" />,
-    color: "text-blue-500",
-    label: "Your Message",
-  },
-  ai_thinking: {
-    icon: <Brain className="w-4 h-4 text-purple-500" />,
-    color: "text-purple-500",
-    label: "Thinking",
-  },
-  ai_planning: {
-    icon: <Sparkles className="w-4 h-4 text-indigo-500" />,
-    color: "text-indigo-500",
-    label: "Planning",
-  },
-  tool_calling: {
-    icon: <Zap className="w-4 h-4 text-yellow-500" />,
-    color: "text-yellow-500",
-    label: "Calling",
-  },
-  tool_executing: {
-    icon: <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />,
-    color: "text-orange-500",
-    label: "Executing",
-  },
-  tool_completed: {
-    icon: <CheckCircle className="w-4 h-4 text-green-500" />,
-    color: "text-green-500",
-    label: "Completed",
-  },
-  processing_results: {
-    icon: <Search className="w-4 h-4 text-cyan-500" />,
-    color: "text-cyan-500",
-    label: "Analyzing",
-  },
-  ai_responding: {
-    icon: <MessageSquare className="w-4 h-4 text-blue-500" />,
-    color: "text-blue-500",
-    label: "Responding",
-  },
-  response_complete: {
-    icon: <CheckCircle2 className="w-4 h-4 text-green-500" />,
-    color: "text-green-500",
-    label: "Complete",
-  },
-  error: {
-    icon: <AlertCircle className="w-4 h-4 text-red-500" />,
-    color: "text-red-500",
-    label: "Error",
-  },
+// Step icon and color mappings - icons are functions now to support dynamic state
+const getStepConfig = (type: InteractionStepType, isActive: boolean) => {
+  const configs: Record<InteractionStepType, { icon: React.ReactNode; color: string; label: string }> = {
+    user_message: {
+      icon: <MessageSquare className="w-4 h-4" />,
+      color: "text-blue-500",
+      label: "Your Message",
+    },
+    ai_thinking: {
+      icon: isActive ? <Brain className="w-4 h-4 text-purple-500 animate-pulse" /> : <Brain className="w-4 h-4 text-purple-500" />,
+      color: "text-purple-500",
+      label: "Thinking",
+    },
+    ai_planning: {
+      icon: isActive ? <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse" /> : <Sparkles className="w-4 h-4 text-indigo-500" />,
+      color: "text-indigo-500",
+      label: "Planning",
+    },
+    tool_calling: {
+      icon: <Zap className="w-4 h-4 text-yellow-500" />,
+      color: "text-yellow-500",
+      label: "Calling",
+    },
+    tool_executing: {
+      icon: isActive ? <Loader2 className="w-4 h-4 text-orange-500 animate-spin" /> : <CheckCircle className="w-4 h-4 text-orange-500" />,
+      color: "text-orange-500",
+      label: isActive ? "Executing" : "Executed",
+    },
+    tool_completed: {
+      icon: <CheckCircle className="w-4 h-4 text-green-500" />,
+      color: "text-green-500",
+      label: "Completed",
+    },
+    processing_results: {
+      icon: isActive ? <Search className="w-4 h-4 text-cyan-500 animate-pulse" /> : <Search className="w-4 h-4 text-cyan-500" />,
+      color: "text-cyan-500",
+      label: "Analyzing",
+    },
+    ai_responding: {
+      icon: isActive ? <MessageSquare className="w-4 h-4 text-blue-500 animate-pulse" /> : <MessageSquare className="w-4 h-4 text-blue-500" />,
+      color: "text-blue-500",
+      label: "Responding",
+    },
+    response_complete: {
+      icon: <CheckCircle2 className="w-4 h-4 text-green-500" />,
+      color: "text-green-500",
+      label: "Complete",
+    },
+    error: {
+      icon: <AlertCircle className="w-4 h-4 text-red-500" />,
+      color: "text-red-500",
+      label: "Error",
+    },
+  };
+  return configs[type];
 };
+
+// Format duration in ms to human readable
+function formatDuration(ms: number): string {
+  if (ms < 1000) {
+    return `${ms}ms`;
+  }
+  const seconds = ms / 1000;
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)}s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = (seconds % 60).toFixed(0);
+  return `${minutes}m ${remainingSeconds}s`;
+}
 
 interface TimelineItemProps {
   item: { type: "step" | "tool"; data: InteractionStep | ToolCall; timestamp: number };
   index: number;
   isLatest: boolean;
+  duration?: number; // Duration in ms from previous step
 }
 
-function TimelineItem({ item, index, isLatest }: TimelineItemProps) {
+function TimelineItem({ item, index, isLatest, duration }: TimelineItemProps) {
   const [isExpanded, setIsExpanded] = React.useState(isLatest);
 
   React.useEffect(() => {
@@ -339,7 +358,8 @@ function TimelineItem({ item, index, isLatest }: TimelineItemProps) {
   }
 
   const step = item.data as InteractionStep;
-  const config = STEP_CONFIG[step.type];
+  // isLatest determines if the step is still "active" (spinning/pulsing)
+  const config = getStepConfig(step.type, isLatest);
 
   return (
     <div className="flex items-start gap-3 py-2 animate-fade-in">
@@ -352,6 +372,12 @@ function TimelineItem({ item, index, isLatest }: TimelineItemProps) {
           <span className={`text-xs px-1.5 py-0.5 rounded-full ${config.color} bg-opacity-10`}>
             {config.label}
           </span>
+          {duration !== undefined && duration > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
+              <Clock className="w-3 h-3" />
+              {formatDuration(duration)}
+            </span>
+          )}
         </div>
         {step.description && (
           <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
@@ -370,6 +396,7 @@ function TimelineItem({ item, index, isLatest }: TimelineItemProps) {
 
 export function ToolPanel({ toolCalls, interactionSteps, isStreaming }: ToolPanelProps) {
   const panelRef = React.useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   // Auto-scroll to bottom when new steps arrive
   React.useEffect(() => {
@@ -410,7 +437,7 @@ export function ToolPanel({ toolCalls, interactionSteps, isStreaming }: ToolPane
       <div className="flex-shrink-0 border-b p-4">
         <div className="flex items-center gap-2">
           <Wrench className="w-5 h-5 text-bitcoin-orange" />
-          <h2 className="font-semibold">AI Process</h2>
+          <h2 className="font-semibold">{t("stepsTitle")}</h2>
           {isStreaming && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -419,7 +446,7 @@ export function ToolPanel({ toolCalls, interactionSteps, isStreaming }: ToolPane
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          Step-by-step view of AI thinking and actions
+          {t("toolPanelDesc")}
         </p>
 
         {/* Stats */}
@@ -435,6 +462,15 @@ export function ToolPanel({ toolCalls, interactionSteps, isStreaming }: ToolPane
               <span className="text-muted-foreground">Done:</span>
               <span className="font-medium">{completedCount}</span>
             </div>
+            {timelineItems.length > 1 && (
+              <div className="flex items-center gap-1">
+                <Zap className="w-3 h-3 text-yellow-500" />
+                <span className="text-muted-foreground">Total:</span>
+                <span className="font-medium">
+                  {formatDuration(timelineItems[timelineItems.length - 1].timestamp - timelineItems[0].timestamp)}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -450,22 +486,26 @@ export function ToolPanel({ toolCalls, interactionSteps, isStreaming }: ToolPane
               <Wrench className="w-6 h-6 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
-              AI interaction steps will appear here when you send a message.
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Try asking about a specific address, token, or transaction.
+              {t("toolPanelEmpty")}
             </p>
           </div>
         ) : (
           <div className="space-y-1">
-            {timelineItems.map((item, index) => (
-              <TimelineItem
-                key={item.type === "step" ? (item.data as InteractionStep).id : (item.data as ToolCall).id}
-                item={item}
-                index={index}
-                isLatest={index === timelineItems.length - 1}
-              />
-            ))}
+            {timelineItems.map((item, index) => {
+              // Calculate duration from previous step
+              const prevTimestamp = index > 0 ? timelineItems[index - 1].timestamp : item.timestamp;
+              const duration = item.timestamp - prevTimestamp;
+
+              return (
+                <TimelineItem
+                  key={item.type === "step" ? (item.data as InteractionStep).id : (item.data as ToolCall).id}
+                  item={item}
+                  index={index}
+                  isLatest={index === timelineItems.length - 1}
+                  duration={duration}
+                />
+              );
+            })}
           </div>
         )}
       </div>

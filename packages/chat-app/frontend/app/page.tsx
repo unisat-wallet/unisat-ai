@@ -3,7 +3,8 @@
  */
 
 import Link from "next/link";
-import { Package, Zap, Shield, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import { Package, Shield, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
@@ -14,9 +15,7 @@ export default function HomePage() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-bitcoin-orange flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <Image src="/logo.png" alt="UniSat" width={32} height={32} />
             <span className="text-xl font-bold">UniSat AI</span>
           </div>
           <nav className="flex items-center gap-6">
@@ -118,15 +117,6 @@ export default function HomePage() {
               className="text-bitcoin-orange hover:underline"
             >
               UniSat
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://anthropic.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-bitcoin-orange hover:underline"
-            >
-              Claude
             </a>
           </p>
         </div>

@@ -35,7 +35,7 @@ export function MessageBubble({ message, showAvatar = true }: MessageBubbleProps
 
       <div
         className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-3",
+          "max-w-[80%] rounded-2xl px-4 py-3 overflow-hidden",
           isUser
             ? "bg-primary text-primary-foreground rounded-br-sm"
             : "bg-muted rounded-bl-sm"
@@ -51,7 +51,7 @@ export function MessageBubble({ message, showAvatar = true }: MessageBubbleProps
 
         <div
           className={cn(
-            "markdown-content prose-sm",
+            "markdown-content prose-sm break-words",
             isUser ? "prose-invert" : "dark:prose-invert"
           )}
         >
