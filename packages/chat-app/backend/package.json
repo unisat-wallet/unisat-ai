@@ -15,6 +15,7 @@
     "@anthropic-ai/sdk": "^0.32.1",
     "@langchain/core": "^0.3.36",
     "@langchain/openai": "^0.4.1",
+    "@unisat/doc-search": "workspace:*",
     "@unisat/open-api": "0.1.2",
     "@unisat/open-api-mcp": "workspace:*",
     "express": "^4.18.0",

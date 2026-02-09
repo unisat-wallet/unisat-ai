@@ -167,7 +167,7 @@ export class WebSocketHandler {
       // Stream response
       for await (const chunk of this.chatService.processMessage(message, {
         sessionId,
-        provider: provider as "anthropic" | "openai" | "agentkit" | undefined,
+        provider: provider as "openai" | "agentkit" | undefined,
       })) {
         chunkCount++;
         console.log(`[WS] === Chunk ${chunkCount} ===`);

@@ -11,7 +11,7 @@ export interface Config {
   unisatApiKey: string;
 
   // AI Provider
-  aiProvider: "anthropic" | "openai" | "agentkit";
+  aiProvider: "openai" | "agentkit";
 
   // Anthropic
   anthropicApiKey?: string;
@@ -44,6 +44,10 @@ export interface Config {
   // Rate Limiting
   rateLimitWindowMs: number;
   rateLimitMax: number;
+
+  // Doc Search
+  docSearchDbPath: string;
+  embeddingProvider: "openai" | "tfidf";
 }
 
 function getEnvVar(name: string, fallback?: string): string {
@@ -62,8 +66,8 @@ export const config: Config = {
   // API Keys
   unisatApiKey: getEnvVar("UNISAT_API_KEY"),
 
-  // AI Provider (default: anthropic)
-  aiProvider: (process.env.AI_PROVIDER as "anthropic" | "openai" | "agentkit") || "anthropic",
+  // AI Provider (default: openai)
+  aiProvider: (process.env.AI_PROVIDER as "openai" | "agentkit") || "openai",
 
   // Anthropic
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
@@ -96,6 +100,10 @@ export const config: Config = {
   // Rate Limiting
   rateLimitWindowMs: parseInt(getEnvVar("RATE_LIMIT_WINDOW_MS", "60000"), 10), // 1 minute
   rateLimitMax: parseInt(getEnvVar("RATE_LIMIT_MAX", "30"), 10),
+
+  // Doc Search
+  docSearchDbPath: getEnvVar("DOC_SEARCH_DB_PATH", "../doc-search/data/docs.lance"),
+  embeddingProvider: (process.env.EMBEDDING_PROVIDER as "openai" | "tfidf") || "tfidf",
 };
 
 // Validate required config
@@ -106,11 +114,7 @@ function validateConfig(): void {
   }
 
   // Validate AI provider configuration
-  if (config.aiProvider === "anthropic") {
-    if (!config.anthropicApiKey || config.anthropicApiKey.trim() === "") {
-      throw new Error("Missing required configuration for Anthropic: anthropicApiKey (ANTHROPIC_API_KEY)");
-    }
-  } else if (config.aiProvider === "openai") {
+  if (config.aiProvider === "openai") {
     if (!config.openaiApiKey || config.openaiApiKey.trim() === "") {
       throw new Error("Missing required configuration for OpenAI: openaiApiKey (OPENAI_API_KEY)");
     }

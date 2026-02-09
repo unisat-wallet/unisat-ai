@@ -15,7 +15,7 @@ import type { ChatMessage, ToolCall, ToolResult } from "../types/index.js";
 export interface ChatServiceOptions {
   sessionId: string;
   history?: ChatMessage[];
-  provider?: "anthropic" | "openai" | "agentkit";
+  provider?: "openai" | "agentkit";
 }
 
 export type InteractionStepType =
@@ -70,7 +70,7 @@ export class ChatService {
   private readonly contextBuilder: ContextBuilder;
   private readonly formatter: ResponseFormatter;
   private readonly sessions = new Map<string, ChatMessage[]>();
-  private readonly defaultProvider: "anthropic" | "openai" | "agentkit";
+  private readonly defaultProvider: "openai" | "agentkit";
 
   constructor() {
     // Initialize all available clients
@@ -115,7 +115,6 @@ export class ChatService {
    */
   getAvailableProviders(): string[] {
     const providers: string[] = [];
-    if (this.anthropicClient) providers.push("anthropic");
     if (this.openaiClient) providers.push("openai");
     if (this.agentKitClient) providers.push("agentkit");
     return providers;
@@ -135,13 +134,9 @@ export class ChatService {
       return { client: this.openaiClient as unknown as AIClient, isAgentKit: false };
     }
 
-    if (selectedProvider === "anthropic" && this.anthropicClient) {
-      return { client: this.anthropicClient as unknown as AIClient, isAgentKit: false };
-    }
-
     // Fallback to any available client
-    if (this.anthropicClient) {
-      return { client: this.anthropicClient as unknown as AIClient, isAgentKit: false };
+    if (this.openaiClient) {
+      return { client: this.openaiClient as unknown as AIClient, isAgentKit: false };
     }
     if (this.openaiClient) {
       return { client: this.openaiClient as unknown as AIClient, isAgentKit: false };
@@ -585,7 +580,7 @@ export class ChatService {
           ),
         };
 
-        for await (const chunk of this.aiClient.streamChat(finalContext)) {
+        for await (const chunk of aiClient.streamChat(finalContext)) {
           finalChunkCount++;
           console.log(
             `[ChatService] Final chunk ${finalChunkCount}, type:`,

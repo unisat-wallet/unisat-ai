@@ -5,7 +5,17 @@
 
 import { createClient } from "@unisat/open-api";
 import { allTools, getHandler, ToolContext } from "@unisat/open-api-mcp";
+import {
+  searchDocsToolDefinition,
+  getDocCategoriesToolDefinition,
+  handleSearchDocs,
+  handleGetDocCategories,
+} from "@unisat/doc-search";
 import { config } from "../config/index.js";
+
+// Set doc-search environment variables before importing
+process.env.DOC_SEARCH_DB_PATH = config.docSearchDbPath;
+process.env.EMBEDDING_PROVIDER = config.embeddingProvider;
 
 // ===== Configuration =====
 
@@ -36,15 +46,32 @@ export interface AnthropicTool {
 /**
  * Convert shared tools to Anthropic format (snake_case)
  */
-export const anthropicTools: AnthropicTool[] = allTools.map((tool) => ({
-  name: tool.name,
-  description: tool.description,
-  input_schema: {
-    type: tool.inputSchema.type,
-    properties: tool.inputSchema.properties,
-    required: tool.inputSchema.required,
+export const anthropicTools: AnthropicTool[] = [
+  // UniSat API tools
+  ...allTools.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: {
+      type: tool.inputSchema.type as "object",
+      properties: tool.inputSchema.properties,
+      required: tool.inputSchema.required,
+    },
+  })),
+  // Documentation search tools
+  {
+    name: searchDocsToolDefinition.name,
+    description: searchDocsToolDefinition.description,
+    input_schema: searchDocsToolDefinition.inputSchema as AnthropicTool["input_schema"],
   },
-}));
+  {
+    name: getDocCategoriesToolDefinition.name,
+    description: getDocCategoriesToolDefinition.description,
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
+];
 
 // ===== Tool Adapter =====
 
@@ -75,6 +102,15 @@ export class ToolAdapter {
    * Execute a tool by name with retry logic
    */
   async executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+    // Handle documentation search tools
+    if (name === "search_docs") {
+      return await handleSearchDocs(args as { query: string; limit?: number; category?: string });
+    }
+    if (name === "get_doc_categories") {
+      return await handleGetDocCategories();
+    }
+
+    // Handle UniSat API tools
     const handler = getHandler(name);
     if (!handler) {
       throw new Error(`Unknown tool: ${name}`);
@@ -116,7 +152,27 @@ export class ToolAdapter {
 
 // ===== System Prompt =====
 
-export const SYSTEM_PROMPT = `You are a Bitcoin blockchain expert assistant specializing in Bitcoin, BRC20 tokens, Runes protocol, and Ordinals inscriptions. You have access to real-time blockchain data through UniSat APIs.
+export const SYSTEM_PROMPT = `You are a Bitcoin blockchain expert assistant specializing in Bitcoin, BRC20 tokens, Runes protocol, and Ordinals inscriptions. You have access to real-time blockchain data through UniSat APIs and comprehensive UniSat documentation.
+
+## Scope Restriction (IMPORTANT)
+
+You are ONLY allowed to answer questions related to:
+- Bitcoin blockchain (blocks, transactions, addresses, UTXOs, fees, mining)
+- BRC20 tokens (token info, balances, holders, transfers, market data)
+- Runes protocol (token info, balances, holders)
+- Ordinals inscriptions (inscription details, collections)
+- UniSat wallet and platform features
+- UniSat API integration and development
+- General cryptocurrency concepts related to Bitcoin ecosystem
+
+**For any questions outside this scope**, you MUST:
+1. Politely decline to answer
+2. Explain that you are specialized in Bitcoin and UniSat related topics
+3. Suggest rephrasing the question if it might be related to Bitcoin
+
+Example responses for off-topic questions:
+- "I'm specialized in Bitcoin blockchain and UniSat-related topics. I can't help with [topic], but I'd be happy to answer questions about Bitcoin, BRC20, Runes, or Ordinals!"
+- "This question is outside my expertise area. As a Bitcoin assistant, I focus on blockchain data, BRC20 tokens, Runes, and Ordinals. Is there anything Bitcoin-related I can help you with?"
 
 ## Your Capabilities
 
@@ -126,6 +182,17 @@ You can help users with:
 - **Runes Protocol**: Token info, balances, holder data
 - **Ordinals Inscriptions**: Inscription details, address inscriptions
 - **Market Data**: BRC20 market stats, order books
+- **Documentation**: UniSat API docs, wallet integration guides, SDK usage
+
+## Documentation Search
+
+You have access to UniSat's comprehensive documentation through the \`search_docs\` tool. Use this when users ask about:
+- How to integrate UniSat wallet
+- API endpoint details and parameters
+- SDK usage and examples
+- Development guides and tutorials
+
+Always search documentation first when users ask "how to" questions about UniSat development.
 
 ## Important Guidelines
 
@@ -136,25 +203,32 @@ You can help users with:
    - Address balances
    - Token holder counts
 
-2. **Be precise with addresses** - Validate Bitcoin addresses when provided. Support legacy (1...), segwit (bc1q...), and taproot (bc1p...) formats.
+2. **Use documentation for development questions** - When users ask about:
+   - API integration
+   - Wallet connection
+   - SDK usage
+   - Code examples
+   Use the \`search_docs\` tool to find accurate, up-to-date information.
 
-3. **Admit uncertainty** - If a tool fails or returns no data, clearly state this to the user. Never make up information.
+3. **Be precise with addresses** - Validate Bitcoin addresses when provided. Support legacy (1...), segwit (bc1q...), and taproot (bc1p...) formats.
 
-4. **Cite sources** - When providing data, mention:
+4. **Admit uncertainty** - If a tool fails or returns no data, clearly state this to the user. Never make up information.
+
+5. **Cite sources** - When providing data, mention:
    - Block height for block data
    - Timestamps for time-sensitive info
-   - Data source (UniSat API)
+   - Data source (UniSat API or Documentation)
 
-5. **Explain technical concepts** - Many users may be new to Bitcoin/BRC20. Explain terms like:
+6. **Explain technical concepts** - Many users may be new to Bitcoin/BRC20. Explain terms like:
    - What a UTXO is
    - How BRC20 works
    - What Runes are
    - Fee rate terminology (sat/vB)
 
-6. **Format responses clearly** - Use:
+7. **Format responses clearly** - Use:
    - Tables for structured data
    - Bullet points for lists
-   - Code blocks for addresses/txids
+   - Code blocks for addresses/txids and code examples
    - Headers for sections
 
 ## Example Responses
